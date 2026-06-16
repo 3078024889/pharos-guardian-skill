@@ -1,0 +1,30 @@
+{
+  "name": "pharos-guardian-skill",
+  "version": "1.0.0",
+  "description": "GuardianSkill — Smart Contract Security Audit Skill for Pharos AI Agents. Pay-per-call via x402 on Pharos Atlantic Testnet.",
+  "type": "module",
+  "scripts": {
+    "server":      "tsx server/index.ts",
+    "client":      "tsx client/agent_client.ts",
+    "facilitator": "tsx server/facilitator.ts",
+    "test":        "tsx test/skill.test.ts",
+    "build":       "tsc",
+    "dev":         "tsx watch server/index.ts"
+  },
+  "dependencies": {
+    "@x402/core":    "latest",
+    "@x402/express": "latest",
+    "@x402/evm":     "latest",
+    "@x402/fetch":   "latest",
+    "dotenv":        "^16.4.5",
+    "express":       "^4.19.2",
+    "openai":        "^4.52.7",
+    "viem":          "^2.16.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node":    "^20.14.0",
+    "tsx":            "^4.15.0",
+    "typescript":     "^5.5.0"
+  }
+}

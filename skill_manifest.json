@@ -1,0 +1,95 @@
+{
+  "skill_id": "guardian-security-audit",
+  "name": "GuardianSkill — Smart Contract Security Audit",
+  "version": "1.0.0",
+  "description": "A reusable Pharos Skill that gives any AI Agent the ability to audit smart contracts for security vulnerabilities before transacting. Combines static analysis with LLM semantic reasoning, with pay-per-audit billing via x402 on Pharos.",
+  "author": "GuardianSkill Team",
+  "license": "MIT",
+
+  "pharos": {
+    "network": "atlantic-testnet",
+    "chain_id": 688689,
+    "rpc": "https://atlantic.dplabs-internal.com/",
+    "payment_token": "USDC",
+    "usdc_address": "0xE0BE08c77f415F577A1B3A9aD7a1Df1479564ec8"
+  },
+
+  "pricing": {
+    "model": "x402-pay-per-call",
+    "price_usd": "0.01",
+    "scheme": "exact",
+    "network": "eip155:688689"
+  },
+
+  "interface": {
+    "endpoint": "/skill/audit",
+    "method": "POST",
+    "input": {
+      "contract_address": {
+        "type": "string",
+        "description": "EVM contract address to audit (0x...)",
+        "required": true
+      },
+      "chain": {
+        "type": "string",
+        "description": "Chain to fetch contract from",
+        "default": "pharos",
+        "required": false
+      },
+      "source_code": {
+        "type": "string",
+        "description": "Optional Solidity source code for deeper analysis",
+        "required": false
+      }
+    },
+    "output": {
+      "risk_score": {
+        "type": "integer",
+        "description": "Numeric risk score 0-100 (0=safe, 100=critical)",
+        "range": [0, 100]
+      },
+      "risk_level": {
+        "type": "string",
+        "enum": ["SAFE", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
+      },
+      "critical_count": { "type": "integer" },
+      "high_count":     { "type": "integer" },
+      "medium_count":   { "type": "integer" },
+      "low_count":      { "type": "integer" },
+      "findings": {
+        "type": "array",
+        "items": {
+          "id":          { "type": "string" },
+          "severity":    { "type": "string" },
+          "title":       { "type": "string" },
+          "description": { "type": "string" },
+          "recommendation": { "type": "string" }
+        }
+      },
+      "recommendation": {
+        "type": "string",
+        "description": "One-line action recommendation for the calling Agent"
+      },
+      "safe_to_transact": {
+        "type": "boolean",
+        "description": "True if no CRITICAL or HIGH findings — Agent can use this to auto-gate transactions"
+      },
+      "audit_id":   { "type": "string", "description": "Unique audit identifier" },
+      "duration_ms": { "type": "integer" },
+      "agent_version": { "type": "string" }
+    }
+  },
+
+  "composability": {
+    "description": "GuardianSkill output can be chained directly into other Pharos Skills",
+    "example_chain": [
+      "GuardianSkill(contract_address) → safe_to_transact=true → TransactionSkill.execute()",
+      "GuardianSkill(contract_address) → safe_to_transact=false → AlertSkill.notify(user)"
+    ]
+  },
+
+  "tags": ["security", "audit", "smart-contract", "defi", "safety", "pharos"],
+
+  "repository": "https://github.com/3078024889/pharos-guardian-skill",
+  "demo": "https://3078024889.github.io/pharos-guardian-skill/"
+}
