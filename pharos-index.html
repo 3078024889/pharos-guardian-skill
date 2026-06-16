@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GuardianSkill — Pharos AI Security Audit Skill</title>
+<style>
+  :root {
+    --bg: #0A0E1A;
+    --bg2: #111827;
+    --bg3: #1C2438;
+    --border: rgba(255,255,255,0.08);
+    --orange: #FF6B2B;
+    --blue: #4A9EFF;
+    --green: #44FF88;
+    --yellow: #FFD700;
+    --red: #FF4444;
+    --text: #E8E6F0;
+    --text2: #8A8EA8;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,sans-serif; }
+
+  nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 32px; border-bottom:1px solid var(--border);
+    background:rgba(10,14,26,0.95); position:sticky; top:0; z-index:100;
+    backdrop-filter:blur(12px);
+  }
+  .nav-logo { font-size:18px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .nav-badge { background:#FF6B2B22; color:var(--orange); border:1px solid #FF6B2B44;
+               padding:4px 12px; border-radius:20px; font-size:12px; }
+  .nav-links a { color:var(--text2); text-decoration:none; font-size:14px; margin-left:24px; }
+  .nav-links a:hover { color:var(--text); }
+
+  .hero { text-align:center; padding:80px 24px 48px; max-width:800px; margin:0 auto; }
+  .hero-tag { display:inline-block; background:#FF6B2B18; color:var(--orange);
+              border:1px solid #FF6B2B33; padding:6px 16px; border-radius:20px;
+              font-size:12px; margin-bottom:24px; }
+  .hero h1 { font-size:clamp(28px,5vw,52px); font-weight:800; line-height:1.15;
+             letter-spacing:-1px; margin-bottom:16px; }
+  .hero h1 span { color:var(--orange); }
+  .hero p { color:var(--text2); font-size:17px; line-height:1.7; max-width:580px;
+            margin:0 auto 32px; }
+  .hero-btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn-primary { background:var(--orange); color:#fff; border:none; padding:12px 28px;
+                 border-radius:10px; font-size:15px; font-weight:600; cursor:pointer;
+                 text-decoration:none; }
+  .btn-secondary { background:transparent; color:var(--text); border:1px solid var(--border);
+                   padding:12px 28px; border-radius:10px; font-size:15px;
+                   text-decoration:none; }
+
+  .stats { display:flex; max-width:680px; margin:0 auto 64px;
+           border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .stat { flex:1; text-align:center; padding:20px 12px;
+          border-right:1px solid var(--border); }
+  .stat:last-child { border-right:none; }
+  .stat-num { font-size:26px; font-weight:800; color:var(--orange); }
+  .stat-label { font-size:11px; color:var(--text2); margin-top:4px; }
+
+  .section { max-width:760px; margin:0 auto 48px; padding:0 16px; }
+  .section-title { font-size:20px; font-weight:700; margin-bottom:20px; }
+  .card { background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:24px; }
+
+  /* x402 flow */
+  .flow { display:flex; flex-direction:column; gap:0; }
+  .flow-step { display:flex; gap:16px; padding:16px 0;
+               border-bottom:1px solid var(--border); align-items:flex-start; }
+  .flow-step:last-child { border-bottom:none; }
+  .flow-num { width:32px; height:32px; border-radius:50%; background:var(--orange);
+              color:#fff; display:flex; align-items:center; justify-content:center;
+              font-weight:700; font-size:13px; flex-shrink:0; }
+  .flow-title { font-weight:600; margin-bottom:4px; font-size:14px; }
+  .flow-desc { color:var(--text2); font-size:13px; line-height:1.5; }
+  .flow-tag { display:inline-block; background:rgba(255,107,43,0.1); color:var(--orange);
+              border:1px solid rgba(255,107,43,0.2); border-radius:4px;
+              padding:2px 8px; font-size:11px; margin-top:6px; }
+
+  /* Demo */
+  .search-row { display:flex; gap:8px; margin-bottom:12px; }
+  .search-input { flex:1; background:rgba(255,255,255,0.06);
+                  border:1px solid rgba(255,255,255,0.12); border-radius:8px;
+                  padding:11px 14px; color:var(--text); font-size:13px;
+                  outline:none; font-family:monospace; }
+  .search-input:focus { border-color:var(--orange); }
+  .btn-audit { background:var(--orange); color:#fff; border:none; border-radius:8px;
+               padding:11px 20px; font-weight:600; cursor:pointer; font-size:14px; }
+  .samples { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+  .sample { font-size:12px; color:var(--orange); cursor:pointer; }
+  .sample-label { font-size:12px; color:var(--text2); }
+
+  .loading { display:none; text-align:center; padding:20px; color:var(--text2); font-size:13px; }
+  .spinner { display:inline-block; width:16px; height:16px;
+             border:2px solid rgba(255,255,255,0.1); border-top-color:var(--orange);
+             border-radius:50%; animation:spin .8s linear infinite;
+             margin-right:8px; vertical-align:middle; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .result { display:none; margin-top:16px; padding:20px;
+            background:rgba(0,0,0,0.3); border-radius:12px;
+            border:1px solid rgba(255,255,255,0.06); }
+  .result.show { display:block; animation:fadeIn .3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  .risk-badge { display:inline-block; padding:6px 18px; border-radius:20px;
+                font-weight:700; font-size:14px; color:#000; margin-bottom:14px; }
+  .meta-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+               gap:8px; margin-bottom:14px; }
+  .meta-item { background:rgba(255,255,255,0.04); border-radius:8px; padding:10px 12px; }
+  .meta-label { font-size:10px; color:var(--text2); text-transform:uppercase; margin-bottom:4px; }
+  .meta-value { font-size:13px; font-weight:600; }
+  .sev-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .sev-b { border:1px solid; border-radius:6px; padding:3px 10px; font-size:12px; font-weight:600; }
+  .x402-box { background:rgba(255,107,43,0.08); border:1px solid rgba(255,107,43,0.2);
+              border-radius:8px; padding:10px 14px; font-size:12px;
+              display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .decision { padding:12px 16px; border-radius:8px; font-size:13px; font-weight:600; }
+  .decision.safe { background:rgba(68,255,136,0.1); border:1px solid rgba(68,255,136,0.3);
+                   color:var(--green); }
+  .decision.unsafe { background:rgba(255,68,68,0.1); border:1px solid rgba(255,68,68,0.3);
+                     color:var(--red); }
+
+  /* Code block */
+  .code-box { background:#0D1117; border:1px solid var(--border); border-radius:10px;
+              padding:20px; font-family:monospace; font-size:12px; line-height:1.7;
+              overflow-x:auto; }
+  .c-key { color:#FF7B72; }
+  .c-str { color:#A5D6FF; }
+  .c-val { color:#79C0FF; }
+  .c-cmt { color:#6E7681; }
+  .c-fn  { color:#D2A8FF; }
+  .c-num { color:#F8CC59; }
+
+  /* Composability */
+  .compose { display:flex; flex-direction:column; gap:12px; }
+  .compose-row { display:flex; align-items:center; gap:12px; }
+  .compose-skill { background:var(--bg3); border:1px solid var(--border);
+                   border-radius:8px; padding:10px 14px; font-size:13px; font-weight:600; }
+  .compose-arrow { color:var(--text2); font-size:18px; }
+  .compose-cond { color:var(--text2); font-size:12px; font-family:monospace; }
+
+  footer { border-top:1px solid var(--border); padding:32px; text-align:center;
+           color:var(--text2); font-size:13px; margin-top:32px; }
+  footer a { color:var(--orange); text-decoration:none; }
+
+  @media(max-width:600px) {
+    .stats { flex-direction:column; }
+    .stat { border-right:none; border-bottom:1px solid var(--border); }
+    nav .nav-links { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">🛡️ GuardianSkill</div>
+  <div class="nav-links">
+    <a href="#demo">Demo</a>
+    <a href="#how">How it works</a>
+    <a href="#code">Integration</a>
+    <a href="https://github.com/3078024889/pharos-guardian-skill" target="_blank">GitHub</a>
+  </div>
+  <div class="nav-badge">Pharos Skill · Phase 1</div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">⚡ x402 Pay-Per-Call · Pharos ChainID 688689</div>
+  <h1>Smart Contract Security<br><span>Audit Skill</span> for Pharos</h1>
+  <p>A reusable Pharos Skill that gives any AI Agent the ability to audit smart contracts before transacting — paying automatically via x402 micropayment on Pharos.</p>
+  <div class="hero-btns">
+    <a class="btn-primary" href="#demo">Try Demo</a>
+    <a class="btn-secondary" href="https://github.com/3078024889/pharos-guardian-skill" target="_blank">View Code →</a>
+  </div>
+</div>
+
+<div class="stats" style="max-width:680px;margin:0 auto 64px;">
+  <div class="stat"><div class="stat-num">$0.01</div><div class="stat-label">USDC per audit</div></div>
+  <div class="stat"><div class="stat-num">&lt;2s</div><div class="stat-label">x402 settlement</div></div>
+  <div class="stat"><div class="stat-num">688689</div><div class="stat-label">Pharos ChainID</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Composable</div></div>
+</div>
+
+<!-- DEMO -->
+<div class="section" id="demo">
+  <div class="section-title">🔍 Live Audit Demo</div>
+  <div class="card">
+    <div style="color:var(--text2);font-size:13px;margin-bottom:10px;">
+      Simulate a Pharos Agent calling GuardianSkill (auto-pays 0.01 USDC via x402)
+    </div>
+    <div class="search-row">
+      <input class="search-input" id="addrInput"
+             placeholder="0x... contract address on Pharos"
+             value="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"/>
+      <button class="btn-audit" onclick="runAudit()">Audit →</button>
+    </div>
+    <div class="samples">
+      <span class="sample-label">Try:</span>
+      <span class="sample" onclick="setAddr('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48')">USDC</span>
+      <span class="sample" onclick="setAddr('0xBAD0000000000000000000000000000000000001')">Vulnerable</span>
+      <span class="sample" onclick="setAddr('0x0000000000000000000000000000000000000000')">Empty</span>
+    </div>
+    <div id="loading" class="loading">
+      <span class="spinner"></span><span id="loadText">Agent sending request to GuardianSkill...</span>
+    </div>
+    <div id="result" class="result"></div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="section" id="how">
+  <div class="section-title">⚙️ x402 Payment Flow on Pharos</div>
+  <div class="card">
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div>
+          <div class="flow-title">Agent sends POST /skill/audit</div>
+          <div class="flow-desc">AI Agent calls GuardianSkill with a contract address. No pre-registration, no API key, no subscription needed.</div>
+          <div class="flow-tag">Pharos Agent → GuardianSkill Server</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div>
+          <div class="flow-title">Server returns HTTP 402 + payment instructions</div>
+          <div class="flow-desc">GuardianSkill responds with payment requirements: 0.01 USDC on Pharos ChainID 688689, recipient address, x402 scheme.</div>
+          <div class="flow-tag">x402 Protocol · USDC · eip155:688689</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div>
+          <div class="flow-title">Agent's x402 client auto-pays on Pharos</div>
+          <div class="flow-desc">The x402 SDK automatically signs and sends 0.01 USDC on Pharos. Sub-second finality — confirmed in &lt;1 second at near-zero gas cost.</div>
+          <div class="flow-tag">Pharos: 30,000 TPS · Sub-second finality</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div>
+          <div class="flow-title">GuardianSkill runs the audit pipeline</div>
+          <div class="flow-desc">Fetches bytecode from Pharos RPC → runs bytecode heuristics (SELFDESTRUCT, DELEGATECALL, tx.origin) → optionally runs LLM semantic analysis for source code.</div>
+          <div class="flow-tag">viem · Pharos RPC · LLM (OpenAI-compatible)</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div>
+          <div class="flow-title">Structured JSON response delivered (HTTP 200)</div>
+          <div class="flow-desc">Agent receives: risk_score, risk_level, safe_to_transact flag, findings list, recommendation. PAYMENT-RESPONSE header contains tx_hash proof.</div>
+          <div class="flow-tag">safe_to_transact → Agent gates next action</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CODE INTEGRATION -->
+<div class="section" id="code">
+  <div class="section-title">🔧 Agent Integration Code</div>
+  <div class="card">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+      Any Pharos Agent integrates GuardianSkill in 3 lines:
+    </div>
+    <div class="code-box">
+<span class="c-cmt">// 1. Wrap fetch with x402 auto-payment</span>
+<span class="c-key">const</span> fetchWithPayment = <span class="c-fn">wrapFetchWithPayment</span>(fetch, x402Client);
+
+<span class="c-cmt">// 2. Call GuardianSkill — auto-pays 0.01 USDC on Pharos if 402 returned</span>
+<span class="c-key">const</span> audit = <span class="c-key">await</span> fetchWithPayment(<span class="c-str">"http://skill-server/skill/audit"</span>, {
+  method: <span class="c-str">"POST"</span>,
+  body: JSON.<span class="c-fn">stringify</span>({ contract_address: <span class="c-str">"0x..."</span>, chain: <span class="c-str">"pharos"</span> })
+});
+
+<span class="c-cmt">// 3. Gate transaction on audit result</span>
+<span class="c-key">if</span> (audit.<span class="c-val">safe_to_transact</span>) {
+  <span class="c-fn">executeTransaction</span>(); <span class="c-cmt">// proceed</span>
+} <span class="c-key">else</span> {
+  <span class="c-fn">alertUser</span>(audit.<span class="c-val">recommendation</span>); <span class="c-cmt">// abort</span>
+}
+    </div>
+  </div>
+</div>
+
+<!-- COMPOSABILITY -->
+<div class="section">
+  <div class="section-title">🔗 Skill Composability</div>
+  <div class="card">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">
+      GuardianSkill chains with any Pharos Skill pipeline:
+    </div>
+    <div class="compose">
+      <div class="compose-row">
+        <div class="compose-skill">🛡️ GuardianSkill</div>
+        <div class="compose-arrow">→</div>
+        <div class="compose-cond">safe_to_transact = true</div>
+        <div class="compose-arrow">→</div>
+        <div class="compose-skill">💸 TransactionSkill</div>
+      </div>
+      <div class="compose-row">
+        <div class="compose-skill">🛡️ GuardianSkill</div>
+        <div class="compose-arrow">→</div>
+        <div class="compose-cond">safe_to_transact = false</div>
+        <div class="compose-arrow">→</div>
+        <div class="compose-skill">🔔 AlertSkill</div>
+      </div>
+      <div class="compose-row">
+        <div class="compose-skill">🛡️ GuardianSkill</div>
+        <div class="compose-arrow">→</div>
+        <div class="compose-cond">risk_score > 50</div>
+        <div class="compose-arrow">→</div>
+        <div class="compose-skill">📊 ReportSkill</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:rgba(255,107,43,0.06);border-radius:8px;font-size:12px;color:var(--text2);">
+      Any Pharos Agent handling DeFi, payments, or RWA can plug GuardianSkill in as a pre-flight safety check before every transaction.
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div style="font-size:16px;font-weight:700;margin-bottom:8px;">🛡️ GuardianSkill</div>
+  <div>Built for <strong>Pharos × Anvita Flow Skill-to-Agent Hackathon</strong> · Phase 1</div>
+  <div style="margin-top:8px;">
+    <a href="https://github.com/3078024889/pharos-guardian-skill" target="_blank">GitHub</a> ·
+    <a href="https://pharos.xyz" target="_blank">Pharos Network</a> ·
+    <a href="https://x402.org" target="_blank">x402 Protocol</a>
+  </div>
+</footer>
+
+<script>
+const SEV_COLORS = {CRITICAL:'#FF4444',HIGH:'#FF8800',MEDIUM:'#FFD700',LOW:'#44BBFF',INFO:'#888'};
+const RISK_COLORS = {CRITICAL:'#FF4444',HIGH:'#FF8800',MEDIUM:'#FFD700',LOW:'#44BBFF',SAFE:'#44FF88'};
+
+const DEMOS = {
+  bad: {
+    risk_level:'CRITICAL', risk_score:95, safe_to_transact:false,
+    counts:{CRITICAL:1,HIGH:2,MEDIUM:1,LOW:0},
+    findings:[
+      {sev:'CRITICAL',title:'SELFDESTRUCT with no access control — anyone can drain'},
+      {sev:'HIGH',title:'Classic reentrancy: state updated after external ETH call'},
+      {sev:'HIGH',title:'tx.origin used for authorization — phishing exploitable'},
+      {sev:'MEDIUM',title:'Integer underflow risk in balance calculation'},
+    ],
+    payment:{tx:'0xf3a1b2c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2',amount:'0.01 USDC'},
+    rec:'⛔ DO NOT TRANSACT. Critical vulnerabilities detected.'
+  },
+  usdc: {
+    risk_level:'LOW', risk_score:8, safe_to_transact:true,
+    counts:{CRITICAL:0,HIGH:0,MEDIUM:0,LOW:2},
+    findings:[
+      {sev:'LOW',title:'Centralized admin blacklist control'},
+      {sev:'LOW',title:'Floating pragma version'},
+    ],
+    payment:{tx:'0xa1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',amount:'0.01 USDC'},
+    rec:'🟢 Low risk. Safe to transact with awareness.'
+  },
+  empty: {
+    risk_level:'CRITICAL', risk_score:100, safe_to_transact:false,
+    counts:{CRITICAL:1,HIGH:0,MEDIUM:0,LOW:0},
+    findings:[
+      {sev:'CRITICAL',title:'No bytecode at this address — not a contract or self-destructed'},
+    ],
+    payment:{tx:'0xb2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3',amount:'0.01 USDC'},
+    rec:'⛔ DO NOT TRANSACT. No contract exists at this address.'
+  }
+};
+
+const LOADING_MSGS = [
+  'Agent sending POST /skill/audit to GuardianSkill...',
+  'Server returns HTTP 402 — payment required...',
+  'x402 client signing 0.01 USDC payment on Pharos (ChainID 688689)...',
+  'Facilitator verifying payment on-chain...',
+  'Fetching contract bytecode from Pharos RPC...',
+  'Running bytecode heuristics (SELFDESTRUCT, DELEGATECALL, tx.origin)...',
+  'LLM semantic analysis running...',
+  'Building structured audit response...',
+];
+
+function setAddr(a) { document.getElementById('addrInput').value = a; }
+
+function runAudit() {
+  const addr = document.getElementById('addrInput').value.trim();
+  const ld = document.getElementById('loading');
+  const rs = document.getElementById('result');
+  rs.classList.remove('show');
+  ld.style.display = 'block';
+
+  let i = 0;
+  const lt = document.getElementById('loadText');
+  lt.textContent = LOADING_MSGS[0];
+  const iv = setInterval(() => {
+    i++;
+    if (i < LOADING_MSGS.length) lt.textContent = LOADING_MSGS[i];
+  }, 600);
+
+  setTimeout(() => {
+    clearInterval(iv);
+    ld.style.display = 'none';
+
+    let data;
+    if (addr.toLowerCase().includes('bad') || addr.includes('000000000001')) data = DEMOS.bad;
+    else if (addr === '0x0000000000000000000000000000000000000000') data = DEMOS.empty;
+    else data = DEMOS.usdc;
+
+    renderResult(rs, addr, data);
+  }, 5000);
+}
+
+function renderResult(rs, addr, d) {
+  const short = addr.length > 20 ? addr.slice(0,10)+'...'+addr.slice(-8) : addr;
+  const rlColor = RISK_COLORS[d.risk_level] || '#888';
+  const txShort = d.payment.tx.slice(0,14)+'...';
+
+  rs.innerHTML = `
+    <div class="x402-box">
+      <span>💳 x402 Payment Confirmed</span>
+      <span style="font-family:monospace;color:var(--orange)">${txShort}</span>
+      <span style="margin-left:auto;color:var(--text2)">0.01 USDC · Pharos 688689</span>
+    </div>
+    <div class="risk-badge" style="background:${rlColor}">${d.risk_level} — Score: ${d.risk_score}/100</div>
+    <div class="meta-grid">
+      <div class="meta-item"><div class="meta-label">Contract</div><div class="meta-value" style="font-family:monospace;font-size:11px">${short}</div></div>
+      <div class="meta-item"><div class="meta-label">Risk Level</div><div class="meta-value" style="color:${rlColor}">${d.risk_level}</div></div>
+      <div class="meta-item"><div class="meta-label">Risk Score</div><div class="meta-value">${d.risk_score}/100</div></div>
+      <div class="meta-item"><div class="meta-label">Safe to Transact</div><div class="meta-value">${d.safe_to_transact ? '✅ Yes' : '⛔ No'}</div></div>
+      <div class="meta-item"><div class="meta-label">Chain</div><div class="meta-value">Pharos 688689</div></div>
+      <div class="meta-item"><div class="meta-label">Payment</div><div class="meta-value" style="color:var(--orange)">0.01 USDC ✓</div></div>
+    </div>
+    <div class="sev-row">
+      ${Object.entries(d.counts).map(([k,v])=>`<div class="sev-b" style="border-color:${SEV_COLORS[k]};color:${SEV_COLORS[k]}">${v} ${k}</div>`).join('')}
+    </div>
+    <div style="margin-bottom:12px">
+      ${d.findings.map(f=>`
+        <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);align-items:flex-start">
+          <span style="font-size:11px;font-weight:700;color:${SEV_COLORS[f.sev]};white-space:nowrap;padding:2px 6px;border:1px solid ${SEV_COLORS[f.sev]};border-radius:4px;flex-shrink:0">${f.sev}</span>
+          <span style="font-size:13px">${f.title}</span>
+        </div>`).join('')}
+    </div>
+    <div class="decision ${d.safe_to_transact ? 'safe' : 'unsafe'}">
+      ${d.safe_to_transact
+        ? '✅ AGENT DECISION: safe_to_transact = true → Proceeding to TransactionSkill'
+        : '⛔ AGENT DECISION: safe_to_transact = false → Routing to AlertSkill, transaction aborted'}
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--text2)">${d.rec}</div>
+  `;
+  rs.classList.add('show');
+}
+</script>
+</body>
+</html>
